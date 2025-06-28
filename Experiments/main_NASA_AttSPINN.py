@@ -18,12 +18,12 @@ def calc_rmse(path):
 
 def load_data(args):
     # ---- change: load *all* batteries & modes
-    files = [
-    "charge/B0005/B0005_2.csv"    
-    ]
+    # files = [
+    # "charge/B0005/B0005_2.csv"    
+    # ]
 
     data = NASAdata(root=args.data_root, args=args)
-    loader_dict = data.read_specific(file_list=files) 
+    loader_dict = data.read_one_batch(mode='charge', batch='B0005') 
     return {
         'train': loader_dict['train'],
         'valid': loader_dict['valid'],
@@ -69,37 +69,49 @@ def plot_loss_curves(log_path, save_folder):
     plt.savefig(os.path.join(save_folder, 'loss_curves.png'))
     plt.show()
 
-def plot_parity_over_time(save_folder):
-    """
-    Plot true and predicted SoC over time (timestep index on x-axis).
-    """
-    pred = np.load(os.path.join(save_folder, 'pred_label.npy')).flatten()
-    true = np.load(os.path.join(save_folder, 'true_label.npy')).flatten()
+def plot_parity_over_time(
+    save_folder,
+    true_fname='true_label.npy',
+    pred_fname='pred_label.npy',
+    out_fname='soc_over_time.png',
+    title='SoC: True vs Predicted Over Time'
+):
+    true = np.load(os.path.join(save_folder, true_fname)).flatten()
+    pred = np.load(os.path.join(save_folder, pred_fname)).flatten()
     time = np.arange(len(true))
 
     plt.figure()
     plt.plot(time, true, label='True SoC')
-    plt.plot(time, pred, label='Predicted SoC')
+    plt.plot(time, pred, label='Predicted SoC', alpha=0.7)
     plt.xlabel('Timestep')
     plt.ylabel('SoC (normalized)')
-    plt.title('SoC: True vs Predicted Over Time')
+    plt.title(title)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(save_folder, 'soc_over_time.png'))
+    plt.savefig(os.path.join(save_folder, out_fname))
     plt.show()
 
-def plot_residual_hist(save_folder):
-    pred = np.load(os.path.join(save_folder, 'pred_label.npy'))
-    true = np.load(os.path.join(save_folder, 'true_label.npy'))
+
+def plot_residual_hist(
+    save_folder,
+    true_fname='true_label.npy',
+    pred_fname='pred_label.npy',
+    out_fname='residual_histogram.png',
+    title='Residual Distribution'
+):
+    true = np.load(os.path.join(save_folder, true_fname))
+    pred = np.load(os.path.join(save_folder, pred_fname))
     residuals = pred - true
+
     plt.figure()
     plt.hist(residuals, bins=50, edgecolor='black')
     plt.xlabel('Residual (Predicted - True)')
     plt.ylabel('Count')
-    plt.title('Residual Distribution')
+    plt.title(title)
     plt.tight_layout()
-    plt.savefig(os.path.join(save_folder, 'residual_histogram.png'))
+    plt.savefig(os.path.join(save_folder, out_fname))
     plt.show()
+
 
 def main():
     args = get_args()
@@ -155,14 +167,49 @@ def main():
         rmse = calc_rmse(save_folder)
         print(f"Experiment {exp+1} finished; RMSE = {rmse:.4f}")
 
+        # Run inference on the *full* dataset (test_3) and save
+        true_all, pred_all = model.Test(dataloader['test_3'])
+        np.save(os.path.join(save_folder, 'true_all.npy'), true_all)
+        np.save(os.path.join(save_folder, 'pred_all.npy'), pred_all)
+
         experiment_folder = f"results/NASA/Experiment{exp+1}"
         log_file = os.path.join(experiment_folder, 'logging.txt')
 
         # Plot and save figures
         plot_loss_curves(log_file, experiment_folder)
-        plot_parity_over_time(experiment_folder)
-        plot_residual_hist(experiment_folder)
 
+        # test‐20% plots
+        plot_parity_over_time(
+            experiment_folder,
+            true_fname='true_label.npy',
+            pred_fname='pred_label.npy',
+            out_fname='soc_test_over_time.png',
+            title='SoC Over Time (20% Test Split)'
+        )
+        
+        plot_residual_hist(
+            experiment_folder,
+            true_fname='true_label.npy',
+            pred_fname='pred_label.npy',
+            out_fname='residual_test_hist.png',
+            title='Residuals on 20% Test Split'
+        )
+
+        # full‐dataset plots
+        plot_parity_over_time(
+            experiment_folder,
+            true_fname='true_all.npy',
+            pred_fname='pred_all.npy',
+            out_fname='soc_full_over_time.png',
+            title='SoC Over Time (Full Dataset)'
+        )
+        plot_residual_hist(
+            experiment_folder,
+            true_fname='true_all.npy',
+            pred_fname='pred_all.npy',
+            out_fname='residual_full_hist.png',
+            title='Residuals on Full Dataset'
+        )
 def get_args():
     parser = argparse.ArgumentParser('Hyperparameters for NASA data')
     parser.add_argument('--data_root', type=str,
