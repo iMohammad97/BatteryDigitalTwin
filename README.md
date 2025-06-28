@@ -1,2 +1,1 @@
-"# AttSPINN" 
 # BatteryDigitalTwin
