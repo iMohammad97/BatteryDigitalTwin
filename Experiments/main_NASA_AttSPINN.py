@@ -28,6 +28,7 @@ def load_data(args):
         'train': loader_dict['train'],
         'valid': loader_dict['valid'],
         'test':  loader_dict['test'],
+        'test_3': loader_dict['test_3'],
     }
 
     # return {
