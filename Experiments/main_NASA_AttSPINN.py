@@ -222,7 +222,7 @@ def get_args():
     parser.add_argument('--normalization_method', type=str,
                         default='min-max', choices=['min-max','z-score'])
     # training schedule
-    parser.add_argument('--epochs', type=int, default=500)
+    parser.add_argument('--epochs', type=int, default=1)
     parser.add_argument('--warmup_epochs', type=int, default=30)
     parser.add_argument('--warmup_lr', type=float, default=0.002)
     parser.add_argument('--lr', type=float, default=0.01)
