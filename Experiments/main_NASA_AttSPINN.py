@@ -117,7 +117,7 @@ def plot_residual_hist(
 def main():
     args = get_args()
 
-    for exp in range(4):
+    for exp in range(args.experimentsCount):
         # each experiment gets its own folder
         save_folder = os.path.join(args.save_root, f"Experiment{exp+1}")
         os.makedirs(save_folder, exist_ok=True)
@@ -215,10 +215,12 @@ def get_args():
     parser = argparse.ArgumentParser('Hyperparameters for NASA data')
     parser.add_argument('--data_root', type=str,
                         default='data/NASA data',
-                        help='root folder containing charge/ and discharge/ subfolders')
+                        help='root folder containing charge/ and discharge/ subfolders') 
     parser.add_argument('--save_root', type=str,
                         default='results/NASA',
                         help='base directory to save experiment outputs')
+    parser.add_argument('--experimentsCount', type=int, default=1,
+                    help='number of experiments to run')
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--normalization_method', type=str,
                         default='min-max', choices=['min-max','z-score'])
